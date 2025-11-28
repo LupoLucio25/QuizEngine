@@ -1,0 +1,198 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Scene Definition",
+    "type": "object",
+    "required": [
+        "id",
+        "version",
+        "blocks"
+    ],
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "Unique ID of the scene/question"
+        },
+        "version": {
+            "type": "integer",
+            "description": "Schema version"
+        },
+        "metadata": {
+            "type": "object",
+            "properties": {
+                "question_text": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "difficulty": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                }
+            }
+        },
+        "blocks": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "type",
+                    "id",
+                    "content"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "road_scene",
+                            "definition_card",
+                            "gauge",
+                            "timeline",
+                            "comparison_table",
+                            "cause_effect",
+                            "icon_grid"
+                        ]
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "layout": {
+                        "type": "object",
+                        "properties": {
+                            "x": {
+                                "type": "number"
+                            },
+                            "y": {
+                                "type": "number"
+                            },
+                            "w": {
+                                "type": "number"
+                            },
+                            "h": {
+                                "type": "number"
+                            }
+                        }
+                    },
+                    "content": {
+                        "type": "object",
+                        "description": "Polymorphic content based on type"
+                    }
+                },
+                "allOf": [
+                    {
+                        "if": {
+                            "properties": {
+                                "type": {
+                                    "const": "road_scene"
+                                }
+                            }
+                        },
+                        "then": {
+                            "properties": {
+                                "content": {
+                                    "type": "object",
+                                    "required": [
+                                        "objects"
+                                    ],
+                                    "properties": {
+                                        "background": {
+                                            "type": "string",
+                                            "default": "asphalt"
+                                        },
+                                        "objects": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "required": [
+                                                    "id",
+                                                    "component_id",
+                                                    "transform"
+                                                ],
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "component_id": {
+                                                        "type": "string"
+                                                    },
+                                                    "transform": {
+                                                        "type": "object",
+                                                        "required": [
+                                                            "x",
+                                                            "y"
+                                                        ],
+                                                        "properties": {
+                                                            "x": {
+                                                                "type": "number"
+                                                            },
+                                                            "y": {
+                                                                "type": "number"
+                                                            },
+                                                            "rotation": {
+                                                                "type": "number",
+                                                                "default": 0
+                                                            },
+                                                            "scale": {
+                                                                "type": "number",
+                                                                "default": 1
+                                                            },
+                                                            "z_index": {
+                                                                "type": "integer",
+                                                                "default": 0
+                                                            }
+                                                        }
+                                                    },
+                                                    "props": {
+                                                        "type": "object",
+                                                        "description": "Instance specific props overriding defaults"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "if": {
+                            "properties": {
+                                "type": {
+                                    "const": "definition_card"
+                                }
+                            }
+                        },
+                        "then": {
+                            "properties": {
+                                "content": {
+                                    "type": "object",
+                                    "required": [
+                                        "text"
+                                    ],
+                                    "properties": {
+                                        "title": {
+                                            "type": "string"
+                                        },
+                                        "text": {
+                                            "type": "string"
+                                        },
+                                        "image_component_id": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}

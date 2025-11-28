@@ -1,0 +1,58 @@
+{
+    "id": "road_segment_straight",
+    "version": "1.0.0",
+    "type": "primitive",
+    "category": "road_surface",
+    "name": "Segmento Stradale Dritto",
+    "description": "Un segmento di strada dritto con larghezza, lunghezza e corsie configurabili",
+    "tags": [
+        "strada",
+        "asfalto",
+        "carreggiata"
+    ],
+    "propsSchema": {
+        "type": "object",
+        "properties": {
+            "width": {
+                "type": "number",
+                "default": 20
+            },
+            "length": {
+                "type": "number",
+                "default": 30
+            },
+            "lanes": {
+                "type": "integer",
+                "default": 2
+            },
+            "direction": {
+                "type": "string",
+                "enum": [
+                    "horizontal",
+                    "vertical"
+                ],
+                "default": "vertical"
+            }
+        }
+    },
+    "defaultProps": {
+        "width": 20,
+        "length": 30,
+        "lanes": 2,
+        "direction": "vertical"
+    },
+    "render": {
+        "layers": [
+            {
+                "type": "rect",
+                "props": {
+                    "x": "-{width/2}",
+                    "y": "0",
+                    "width": "{width}",
+                    "height": "{length}",
+                    "fill": "#1f2937"
+                }
+            }
+        ]
+    }
+}

@@ -1,0 +1,231 @@
+{
+    "id": "example_all_features",
+    "version": 1,
+    "metadata": {
+        "question_text": "In questa situazione, chi ha la precedenza?",
+        "difficulty": 3,
+        "tags": [
+            "intersection",
+            "precedence",
+            "traffic-signs"
+        ]
+    },
+    "blocks": [
+        {
+            "id": "block_main_scene",
+            "type": "road_scene",
+            "title": "Scenario Stradale",
+            "layout": {
+                "x": 0,
+                "y": 0,
+                "w": 60,
+                "h": 60
+            },
+            "content": {
+                "background": "asphalt",
+                "objects": [
+                    {
+                        "id": "road_vertical",
+                        "component_id": "road_segment_straight",
+                        "transform": {
+                            "x": 50,
+                            "y": 50,
+                            "rotation": 0,
+                            "z_index": 0
+                        },
+                        "props": {
+                            "width": 18,
+                            "length": 100
+                        }
+                    },
+                    {
+                        "id": "road_horizontal",
+                        "component_id": "road_segment_straight",
+                        "transform": {
+                            "x": 50,
+                            "y": 50,
+                            "rotation": 90,
+                            "z_index": 0
+                        },
+                        "props": {
+                            "width": 18,
+                            "length": 100
+                        }
+                    },
+                    {
+                        "id": "car_blue",
+                        "component_id": "vehicle_sedan",
+                        "transform": {
+                            "x": 50,
+                            "y": 75,
+                            "rotation": 0,
+                            "z_index": 10
+                        },
+                        "props": {
+                            "color": "#3b82f6",
+                            "headlights": true
+                        }
+                    },
+                    {
+                        "id": "car_red",
+                        "component_id": "vehicle_sedan",
+                        "transform": {
+                            "x": 25,
+                            "y": 50,
+                            "rotation": 90,
+                            "z_index": 10
+                        },
+                        "props": {
+                            "color": "#ef4444"
+                        }
+                    },
+                    {
+                        "id": "motorcycle",
+                        "component_id": "vehicle_motorcycle",
+                        "transform": {
+                            "x": 75,
+                            "y": 50,
+                            "rotation": 270,
+                            "z_index": 10
+                        },
+                        "props": {
+                            "color": "#000"
+                        }
+                    },
+                    {
+                        "id": "stop_sign",
+                        "component_id": "sign_stop",
+                        "transform": {
+                            "x": 20,
+                            "y": 42,
+                            "rotation": 0,
+                            "z_index": 15,
+                            "scale": 0.8
+                        }
+                    },
+                    {
+                        "id": "pedestrian",
+                        "component_id": "pedestrian_walking",
+                        "transform": {
+                            "x": 55,
+                            "y": 35,
+                            "rotation": 90,
+                            "z_index": 12,
+                            "scale": 1.2
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "id": "block_speed_gauge",
+            "type": "gauge",
+            "title": "Velocità Consigliata",
+            "layout": {
+                "x": 60,
+                "y": 0,
+                "w": 40,
+                "h": 30
+            },
+            "content": {
+                "value": 50,
+                "max": 130,
+                "min": 0,
+                "label": "km/h",
+                "unit": "km/h",
+                "zones": [
+                    {
+                        "min": 0,
+                        "max": 50,
+                        "color": "#22c55e"
+                    },
+                    {
+                        "min": 50,
+                        "max": 90,
+                        "color": "#eab308"
+                    },
+                    {
+                        "min": 90,
+                        "max": 130,
+                        "color": "#ef4444"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "block_timeline",
+            "type": "timeline",
+            "title": "Sequenza Corretta",
+            "layout": {
+                "x": 60,
+                "y": 30,
+                "w": 40,
+                "h": 30
+            },
+            "content": {
+                "orientation": "vertical",
+                "events": [
+                    {
+                        "id": "step1",
+                        "title": "Auto rossa si ferma",
+                        "description": "Rispetta il segnale di STOP"
+                    },
+                    {
+                        "id": "step2",
+                        "title": "Pedone attraversa",
+                        "description": "Ha sempre la precedenza"
+                    },
+                    {
+                        "id": "step3",
+                        "title": "Auto blu procede",
+                        "description": "Non ha obbligo di arresto"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "block_comparison",
+            "type": "comparison_table",
+            "title": "Confronto Veicoli",
+            "layout": {
+                "x": 0,
+                "y": 60,
+                "w": 100,
+                "h": 40
+            },
+            "content": {
+                "headers": [
+                    "Auto Blu",
+                    "Auto Rossa",
+                    "Moto"
+                ],
+                "rows": [
+                    {
+                        "label": "Obbligo di arresto",
+                        "values": [
+                            "No",
+                            "Sì (STOP)",
+                            "No"
+                        ]
+                    },
+                    {
+                        "label": "Precedenza",
+                        "values": [
+                            "Sì",
+                            "No",
+                            "Da valutare"
+                        ]
+                    },
+                    {
+                        "label": "Velocità max (km/h)",
+                        "values": [
+                            "50",
+                            "50",
+                            "50"
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

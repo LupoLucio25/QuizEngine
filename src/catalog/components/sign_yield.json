@@ -1,0 +1,19 @@
+{
+    "id": "sign_yield",
+    "version": "1.0.0",
+    "type": "primitive",
+    "category": "sign",
+    "name": "Segnale di Precedenza",
+    "description": "Segnale triangolare di dare precedenza",
+    "tags": [
+        "segnale",
+        "traffico",
+        "precedenza",
+        "dare-la-strada"
+    ],
+    "propsSchema": {},
+    "defaultProps": {},
+    "render": {
+        "svg": "<g><polygon points='0,-4 3.46,2 -3.46,2' fill='#fff' stroke='#dc2626' stroke-width='0.8'/><polygon points='0,-3 2.6,1.5 -2.6,1.5' fill='none' stroke='#dc2626' stroke-width='0.5'/></g>"
+    }
+}

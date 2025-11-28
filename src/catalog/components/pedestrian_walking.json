@@ -1,0 +1,18 @@
+{
+    "id": "pedestrian_walking",
+    "version": "1.0.0",
+    "type": "primitive",
+    "category": "pedestrian",
+    "name": "Pedone Che Cammina",
+    "description": "Figura semplice di pedone, vista dall'alto",
+    "tags": [
+        "pedone",
+        "persona",
+        "camminare"
+    ],
+    "propsSchema": {},
+    "defaultProps": {},
+    "render": {
+        "svg": "<g><circle cx='0' cy='-1.5' r='1' fill='#fbbf24'/><ellipse cx='0' cy='1' rx='1.2' ry='2' fill='#3b82f6'/></g>"
+    }
+}

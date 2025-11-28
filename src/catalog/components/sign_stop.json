@@ -1,0 +1,19 @@
+{
+    "id": "sign_stop",
+    "version": "1.0.0",
+    "type": "primitive",
+    "category": "sign",
+    "name": "Segnale di STOP",
+    "description": "Segnale di STOP ottagonale rosso",
+    "tags": [
+        "segnale",
+        "traffico",
+        "stop",
+        "regolamentazione"
+    ],
+    "propsSchema": {},
+    "defaultProps": {},
+    "render": {
+        "svg": "<g><polygon points='0,-4 2.83,-2.83 4,0 2.83,2.83 0,4 -2.83,2.83 -4,0 -2.83,-2.83' fill='#dc2626' stroke='#fff' stroke-width='0.3'/><text x='0' y='1' text-anchor='middle' font-size='2.5' fill='#fff' font-weight='bold'>STOP</text></g>"
+    }
+}

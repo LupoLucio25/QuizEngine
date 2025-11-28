@@ -1,0 +1,93 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Component Descriptor",
+  "type": "object",
+  "required": ["id", "version", "type", "category", "name", "defaultProps"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$",
+      "description": "Unique identifier for the component (snake_case)"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of the component"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["primitive", "composite", "logic"],
+      "description": "Type of the component. Primitive = SVG elements; Composite = Group of other components."
+    },
+    "category": {
+      "type": "string",
+      "enum": ["vehicle", "pedestrian", "sign", "road_surface", "infrastructure", "icon", "abstract", "ui"],
+      "description": "Taxonomy category"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human readable name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description for the LLM to understand when to use this"
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "propsSchema": {
+      "type": "object",
+      "description": "JSON Schema defining the allowed properties for this component",
+      "additionalProperties": true
+    },
+    "defaultProps": {
+      "type": "object",
+      "description": "Default values for the properties"
+    },
+    "render": {
+      "type": "object",
+      "description": "Rendering instructions (mostly for primitives)",
+      "properties": {
+        "svg": {
+          "type": "string",
+          "description": "Raw SVG path or content (for simple primitives)"
+        },
+        "layers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": { "enum": ["path", "circle", "rect", "text", "image"] },
+              "props": { "type": "object" },
+              "condition": { "type": "string", "description": "Simple JS-like expression using props (e.g. 'props.lightsOn')" }
+            }
+          }
+        }
+      }
+    },
+    "children": {
+      "type": "array",
+      "description": "For composite components, list of child components",
+      "items": {
+        "type": "object",
+        "required": ["componentId"],
+        "properties": {
+          "componentId": { "type": "string" },
+          "offset": {
+            "type": "object",
+            "properties": {
+              "x": { "type": "number" },
+              "y": { "type": "number" },
+              "rotation": { "type": "number" }
+            }
+          },
+          "propsMapping": {
+            "type": "object",
+            "description": "Map parent props to child props"
+          }
+        }
+      }
+    }
+  }
+}
