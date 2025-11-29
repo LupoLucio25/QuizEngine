@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { SceneJSON, SceneBlock, RoadSceneContent, DefinitionCardContent } from '../types/scene';
 import { ObjectRenderer } from './ObjectRenderer';
 import { GaugeRenderer } from './GaugeRenderer';
@@ -8,9 +8,25 @@ import { ComparisonTableRenderer } from './ComparisonTableRenderer';
 interface SceneRendererProps {
     scene: SceneJSON;
     className?: string;
+    onMissingComponents?: (componentIds: string[]) => void;
 }
 
-export const SceneRenderer: React.FC<SceneRendererProps> = ({ scene, className }) => {
+export const SceneRenderer: React.FC<SceneRendererProps> = ({ scene, className, onMissingComponents }) => {
+    const [missingComponents, setMissingComponents] = useState<Set<string>>(new Set());
+
+    const handleMissingComponent = useCallback((componentId: string) => {
+        setMissingComponents(prev => {
+            const newSet = new Set(prev);
+            if (!newSet.has(componentId)) {
+                newSet.add(componentId);
+                if (onMissingComponents) {
+                    onMissingComponents(Array.from(newSet));
+                }
+            }
+            return newSet;
+        });
+    }, [onMissingComponents]);
+
     return (
         <div className={`w-full h-full relative bg-gray-50 ${className}`}>
             {/* Display metadata if present */}
@@ -22,14 +38,19 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({ scene, className }
 
             <div className={`w-full h-full ${scene.metadata?.question_text ? 'pt-12' : ''}`}>
                 {scene.blocks.map((block) => (
-                    <BlockRenderer key={block.id} block={block} />
+                    <BlockRenderer key={block.id} block={block} onMissingComponent={handleMissingComponent} />
                 ))}
             </div>
         </div>
     );
 };
 
-const BlockRenderer: React.FC<{ block: SceneBlock }> = ({ block }) => {
+interface BlockRendererProps {
+    block: SceneBlock;
+    onMissingComponent?: (id: string) => void;
+}
+
+const BlockRenderer: React.FC<BlockRendererProps> = ({ block, onMissingComponent }) => {
     const { layout, type } = block;
     const style: React.CSSProperties = layout
         ? {
@@ -50,7 +71,7 @@ const BlockRenderer: React.FC<{ block: SceneBlock }> = ({ block }) => {
                             {block.title}
                         </div>
                     )}
-                    <RoadSceneRenderer content={block.content as RoadSceneContent} />
+                    <RoadSceneRenderer content={block.content as RoadSceneContent} onMissingComponent={onMissingComponent} />
                 </div>
             );
 
@@ -123,7 +144,12 @@ const BlockRenderer: React.FC<{ block: SceneBlock }> = ({ block }) => {
     }
 };
 
-const RoadSceneRenderer: React.FC<{ content: RoadSceneContent }> = ({ content }) => {
+interface RoadSceneRendererProps {
+    content: RoadSceneContent;
+    onMissingComponent?: (id: string) => void;
+}
+
+const RoadSceneRenderer: React.FC<RoadSceneRendererProps> = ({ content, onMissingComponent }) => {
     const bgColor = content.background === 'grass' ? '#86efac' : '#71717a';
 
     return (
@@ -139,7 +165,11 @@ const RoadSceneRenderer: React.FC<{ content: RoadSceneContent }> = ({ content })
             {content.objects
                 .sort((a, b) => (a.transform.z_index || 0) - (b.transform.z_index || 0))
                 .map((obj) => (
-                    <ObjectRenderer key={obj.id} object={obj} />
+                    <ObjectRenderer
+                        key={obj.id}
+                        object={obj}
+                        onMissingComponent={onMissingComponent}
+                    />
                 ))}
         </svg>
     );

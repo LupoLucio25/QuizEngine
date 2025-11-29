@@ -4,76 +4,77 @@ import { getComponent } from '../catalog/registry';
 
 interface ObjectRendererProps {
     object: SceneObject;
+    onMissingComponent?: (componentId: string) => void;
 }
 
-export const ObjectRenderer: React.FC<ObjectRendererProps> = ({ object }) => {
-    const component = getComponent(object.component_id);
+export const ObjectRenderer: React.FC<ObjectRendererProps> = ({ object, onMissingComponent }) => {
+    const { component_id, transform, props = {} } = object;
+    const component = getComponent(component_id);
 
+    // Se il componente non esiste, mostra placeholder e notifica
     if (!component) {
-        console.warn(`Component not found: ${object.component_id}`);
+        if (onMissingComponent) {
+            onMissingComponent(component_id);
+        }
+
         return (
-            <g transform={`translate(${object.transform.x}, ${object.transform.y})`}>
-                <circle cx="0" cy="0" r="2" fill="red" opacity="0.5" />
-                <text x="0" y="4" fontSize="2" fill="red" textAnchor="middle">
+            <g transform={`translate(${transform.x}, ${transform.y}) rotate(${transform.rotation || 0}) scale(${transform.scale || 1})`}>
+                {/* Placeholder visivo per componente mancante */}
+                <rect
+                    x="-5"
+                    y="-5"
+                    width="10"
+                    height="10"
+                    fill="#fee2e2"
+                    stroke="#dc2626"
+                    strokeWidth="0.5"
+                    strokeDasharray="1,1"
+                    rx="1"
+                />
+                <text
+                    x="0"
+                    y="0"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize="2"
+                    fill="#dc2626"
+                    fontWeight="bold"
+                >
                     ?
                 </text>
+                <title>{`Missing: ${component_id}`}</title>
             </g>
         );
     }
 
-    const { x, y, rotation = 0, scale = 1 } = object.transform;
-
-    // Merge default props with instance props
-    const finalProps = { ...component.defaultProps, ...object.props };
-
-    // Interpolate SVG string with props
-    const renderSvg = () => {
-        if (component.render?.svg) {
-            let svgContent = component.render.svg;
-
-            // Simple interpolation: replace {propName} with values
-            // Also handle simple boolean conditions like {condition ? "value1" : "value2"}
-            Object.entries(finalProps).forEach(([key, value]) => {
-                // Handle simple conditionals in SVG string
-                const conditionalRegex = new RegExp(`\\{${key}\\s*\\?\\s*"([^"]+)"\\s*:\\s*"([^"]+)"\\}`, 'g');
-                svgContent = svgContent.replace(conditionalRegex, (_, trueVal, falseVal) => {
-                    return value ? trueVal : falseVal;
-                });
-
-                // Simple prop replacement
-                svgContent = svgContent.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value));
-            });
-
-            return <g dangerouslySetInnerHTML={{ __html: svgContent }} />;
-        }
-
-        if (component.render?.layers) {
-            return (
-                <>
-                    {component.render.layers.map((layer, idx) => {
-                        if (layer.type === 'rect') {
-                            const w = finalProps.width || 10;
-                            const h = finalProps.height || 10;
-                            const fill = finalProps.fill || 'gray';
-                            return <rect key={idx} x="-5" y="-5" width={w} height={h} fill={fill} />;
-                        }
-                        if (layer.type === 'circle') {
-                            const r = finalProps.radius || 5;
-                            const fill = finalProps.fill || 'gray';
-                            return <circle key={idx} cx="0" cy="0" r={r} fill={fill} />;
-                        }
-                        return null;
-                    })}
-                </>
-            );
-        }
-
+    // Componente esiste - rendering normale
+    if (!component.render?.svg) {
         return null;
-    };
+    }
+
+    // Interpolate props into SVG
+    let svgContent = component.render.svg;
+    const allProps = { ...component.defaultProps, ...props };
+
+    // Replace conditional expressions {prop ? "val1" : "val2"}
+    Object.entries(allProps).forEach(([key, value]) => {
+        const conditionalRegex = new RegExp(`\\{${key}\\s*\\?\\s*"([^"]+)"\\s*:\\s*"([^"]+)"\\}`, 'g');
+        svgContent = svgContent.replace(conditionalRegex, (_, trueVal, falseVal) => {
+            return value ? trueVal : falseVal;
+        });
+    });
+
+    // Replace simple prop references {propName}
+    Object.entries(allProps).forEach(([key, value]) => {
+        svgContent = svgContent.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value));
+    });
 
     return (
-        <g transform={`translate(${x}, ${y}) rotate(${rotation}) scale(${scale})`}>
-            {renderSvg()}
+        <g
+            transform={`translate(${transform.x}, ${transform.y}) rotate(${transform.rotation || 0}) scale(${transform.scale || 1})`}
+            style={{ zIndex: transform.z_index }}
+        >
+            <g dangerouslySetInnerHTML={{ __html: svgContent }} />
         </g>
     );
 };

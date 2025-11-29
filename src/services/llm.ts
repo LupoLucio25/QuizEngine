@@ -1,30 +1,30 @@
 import { ComponentDescriptor } from '../types/catalog';
 import { SceneJSON } from '../types/scene';
 
-const OPENROUTER_API_KEY = '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';
+const OPENROUTER_API_KEY = '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';
 const MODEL = 'x-ai/grok-4.1-fast:free';
 
 export interface Message {
-    role: 'user' | 'assistant' | 'system';
-    content: string;
-    reasoning_details?: any;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  reasoning_details?: any;
 }
 
 interface SceneDirectorContext {
-    catalog: ComponentDescriptor[];
-    currentScene?: SceneJSON;
-    questionContext?: string;
+  catalog: ComponentDescriptor[];
+  currentScene?: SceneJSON;
+  questionContext?: string;
 }
 
 /**
  * Genera il system prompt per il Scene-Director
  */
 function generateSceneDirectorSystemPrompt(context: SceneDirectorContext): string {
-    const componentList = context.catalog.map(c =>
-        `- ${c.id}: ${c.name} - ${c.description}`
-    ).join('\n');
+  const componentList = context.catalog.map(c =>
+    `- ${c.id}: ${c.name} - ${c.description}`
+  ).join('\n');
 
-    return `Sei il **Scene-Director**, un AI specializzato nella creazione di scene 2D per quiz sulla patente di guida.
+  return `Sei il **Scene-Director**, un AI specializzato nella creazione di scene 2D per quiz sulla patente di guida.
 
 # REGOLE FONDAMENTALI
 
@@ -137,77 +137,77 @@ Rispondi SEMPRE solo con JSON valido, senza testo aggiuntivo.`;
  * Chiama l'API OpenRouter con reasoning
  */
 export async function callLLM(
-    messages: Message[],
-    enableReasoning: boolean = true
+  messages: Message[],
+  enableReasoning: boolean = true
 ): Promise<{ content: string; reasoning_details?: any }> {
-    try {
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': window.location.href,
-                'X-Title': 'QuizEngine Editor'
-            },
-            body: JSON.stringify({
-                model: MODEL,
-                messages: messages,
-                reasoning: { enabled: enableReasoning }
-            })
-        });
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': window.location.href,
+        'X-Title': 'QuizEngine Editor'
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: messages,
+        reasoning: { enabled: enableReasoning }
+      })
+    });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`API Error: ${errorData.error?.message || response.statusText}`);
-        }
-
-        const result = await response.json();
-        const assistantMessage = result.choices[0].message;
-
-        return {
-            content: assistantMessage.content,
-            reasoning_details: assistantMessage.reasoning_details
-        };
-    } catch (error) {
-        console.error('LLM API Error:', error);
-        throw error;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`API Error: ${errorData.error?.message || response.statusText}`);
     }
+
+    const result = await response.json();
+    const assistantMessage = result.choices[0].message;
+
+    return {
+      content: assistantMessage.content,
+      reasoning_details: assistantMessage.reasoning_details
+    };
+  } catch (error) {
+    console.error('LLM API Error:', error);
+    throw error;
+  }
 }
 
 /**
  * Chiama il Scene-Director per generare o modificare una scena
  */
 export async function callSceneDirector(
-    userRequest: string,
-    context: SceneDirectorContext,
-    conversationHistory: Message[] = []
-): Promise<{ response: string; reasoning_details?: any }> {
-    const systemPrompt = generateSceneDirectorSystemPrompt(context);
+  userRequest: string,
+  context: SceneDirectorContext,
+  conversationHistory: Message[] = []
+): Promise<{ content: string; reasoning_details?: any }> {
+  const systemPrompt = generateSceneDirectorSystemPrompt(context);
 
-    const messages: Message[] = [
-        { role: 'system', content: systemPrompt },
-        ...conversationHistory,
-        { role: 'user', content: userRequest }
-    ];
+  const messages: Message[] = [
+    { role: 'system', content: systemPrompt },
+    ...conversationHistory,
+    { role: 'user', content: userRequest }
+  ];
 
-    return await callLLM(messages, true);
+  return await callLLM(messages, true);
 }
 
 /**
  * Estrae il JSON dalla risposta del modello
  */
 export function extractJSONFromResponse(response: string): any {
-    // Cerca blocchi di codice JSON
-    const jsonBlockMatch = response.match(/```json\s*([\s\S]*?)\s*```/);
-    if (jsonBlockMatch) {
-        return JSON.parse(jsonBlockMatch[1]);
-    }
+  // Cerca blocchi di codice JSON
+  const jsonBlockMatch = response.match(/```json\s*([\s\S]*?)\s*```/);
+  if (jsonBlockMatch) {
+    return JSON.parse(jsonBlockMatch[1]);
+  }
 
-    // Cerca JSON diretto
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
-    }
+  // Cerca JSON diretto
+  const jsonMatch = response.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    return JSON.parse(jsonMatch[0]);
+  }
 
-    throw new Error('Nessun JSON valido trovato nella risposta');
+  throw new Error('Nessun JSON valido trovato nella risposta');
 }

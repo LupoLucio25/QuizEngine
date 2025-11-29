@@ -7,12 +7,16 @@ interface ComponentEditorModalProps {
     component: ComponentDescriptor;
     onClose: () => void;
     onSave: (component: ComponentDescriptor) => void;
+    onDelete?: (componentId: string) => void;
+    onRegenerate?: (componentId: string) => void;
 }
 
 export const ComponentEditorModal: React.FC<ComponentEditorModalProps> = ({
     component: initialComponent,
     onClose,
-    onSave
+    onSave,
+    onDelete,
+    onRegenerate
 }) => {
     const [component, setComponent] = useState<ComponentDescriptor>(initialComponent);
     const [jsonText, setJsonText] = useState(JSON.stringify(initialComponent, null, 2));
@@ -127,6 +131,33 @@ export const ComponentEditorModal: React.FC<ComponentEditorModalProps> = ({
                         <p className="text-sm text-gray-600 mt-1">{component.name} ({component.id})</p>
                     </div>
                     <div className="flex gap-2">
+                        {onRegenerate && (
+                            <button
+                                onClick={() => {
+                                    if (confirm('Sei sicuro di voler rigenerare questo componente da zero?')) {
+                                        onRegenerate(component.id);
+                                        onClose();
+                                    }
+                                }}
+                                className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 border border-purple-200"
+                            >
+                                ⚡ Rigenera
+                            </button>
+                        )}
+                        {onDelete && (
+                            <button
+                                onClick={() => {
+                                    if (confirm('Sei sicuro di voler eliminare questo componente?')) {
+                                        onDelete(component.id);
+                                        onClose();
+                                    }
+                                }}
+                                className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 border border-red-200"
+                            >
+                                🗑️ Elimina
+                            </button>
+                        )}
+                        <div className="w-px h-8 bg-gray-300 mx-2"></div>
                         <button
                             onClick={() => onSave(component)}
                             disabled={validationErrors.length > 0}

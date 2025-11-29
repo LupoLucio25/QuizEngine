@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { SceneJSON } from '../types/scene';
 import { ComponentDescriptor } from '../types/catalog';
 import { SceneRenderer } from '../engine/SceneRenderer';
-import { getAllComponents, ComponentRegistry } from '../catalog/registry';
+import { getAllComponents, ComponentRegistry, removeComponent } from '../catalog/registry';
 import { validateSceneWithCatalog } from '../utils/validation';
 import { callSceneDirector, extractJSONFromResponse, Message } from '../services/llm';
 import { autoGenerateComponent } from '../services/componentDesigner';
@@ -44,13 +44,12 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({ initialScene }) => {
     ]);
     const [llmMessages, setLlmMessages] = useState<Message[]>([]);
 
-    // Auto-generazione componenti man canti
+    // Auto-generazione componenti mancanti
     const autoGenerateMissingComponents = async (componentIds: string[]) => {
         for (const componentId of componentIds) {
             const jobId = generationQueue.addJob(componentId);
 
             try {
-                // Update progress
                 generationQueue.updateJob(jobId, { status: 'generating', progress: 30 });
 
                 // Determina categoria dal nome
@@ -100,7 +99,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({ initialScene }) => {
                 const missing = (validation.errors || [])
                     .filter(err => err.includes('non-existent component'))
                     .map(err => err.split(':')[1]?.trim())
-                    .filter(Boolean);
+                    .filter(Boolean) as string[];
                 setMissingComponents(missing);
             }
         } catch (err) {
@@ -126,39 +125,36 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({ initialScene }) => {
 
             const result = await callSceneDirector(userMessage, context, llmMessages);
             let aiResponse = result.content;
-            const reasoning = result.reasoning_details?.content || null;
+            const reasoning = result.reasoning_details?.content || undefined;
 
             try {
-                const sceneJSON = extractJSONFromResponse(result.content);
+                const sceneJSON = extractJSONFromResponse(result.content) as SceneJSON;
+
+                // Valida la scena generata
                 const validation = validateSceneWithCatalog(sceneJSON, ComponentRegistry);
 
-                if (validation.valid) {
-                    setScene(sceneJSON);
-                    setJsonText(JSON.stringify(sceneJSON, null, 2));
-                    setValidationErrors([]);
-                    setMissingComponents([]);
-                    aiResponse = "✅ Scena generata con successo! Verifica l'anteprima.";
-                } else {
-                    // Componenti mancanti - avvia auto-generazione
-                    const missing = (validation.errors || [])
-                        .filter(err => err.includes('non-existent component'))
-                        .map(err => err.split(':')[1]?.trim())
-                        .filter(Boolean);
+                // Imposta sempre la scena (anche se ha errori)
+                setScene(sceneJSON);
+                setJsonText(JSON.stringify(sceneJSON, null, 2));
+                setValidationErrors(validation.errors || []);
 
-                    if (missing.length > 0) {
-                        setMissingComponents(missing);
-                        aiResponse = `🎨 Ho generato la scena, ma mancano ${missing.length} componenti. Li sto creando automaticamente in background... Attendi qualche secondo!`;
+                // Estrai componenti mancanti
+                const missing = (validation.errors || [])
+                    .filter((err: string) => err.includes('non-existent component'))
+                    .map((err: string) => err.split(':')[1]?.trim())
+                    .filter(Boolean) as string[];
 
-                        // Avvia generazione automatica
-                        autoGenerateMissingComponents(missing);
-                    } else {
-                        aiResponse = `⚠️ Errori nella scena:\n${validation.errors?.join('\n')}`;
-                    }
-
-                    setValidationErrors(validation.errors || []);
+                if (missing.length > 0) {
+                    setMissingComponents(missing);
+                    aiResponse = `🎨 Ho generato la scena, ma mancano ${missing.length} componenti. Li sto creando automaticamente in background...`;
+                    autoGenerateMissingComponents(missing);
+                } else if (!validation.valid && validation.errors?.length) {
+                    aiResponse = `⚠️ Errori nella scena:\n${validation.errors.join('\n')}`;
+                } else if (!aiResponse || aiResponse === result.content) {
+                    aiResponse = '✅ Ho aggiornato la scena!';
                 }
             } catch (jsonError) {
-                // Risposta testuale
+                console.warn('Impossibile estrarre JSON dalla risposta LLM:', jsonError);
             }
 
             setChatHistory([
@@ -182,6 +178,46 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({ initialScene }) => {
         }
     };
 
+    // Funzione per eliminare un componente
+    const handleDeleteComponent = (componentId: string) => {
+        removeComponent(componentId);
+        setEditingComponent(null);
+
+        // Ricalida la scena per aggiornare gli errori
+        const validation = validateSceneWithCatalog(scene, ComponentRegistry);
+        setValidationErrors(validation.errors || []);
+
+        const missing = (validation.errors || [])
+            .filter(err => err.includes('non-existent component'))
+            .map(err => err.split(':')[1]?.trim())
+            .filter(Boolean) as string[];
+
+        setMissingComponents(missing);
+    };
+
+    // Funzione per rigenerare un componente
+    const handleRegenerateComponent = (componentId: string) => {
+        setEditingComponent(null);
+        setMissingComponents(prev => [...prev, componentId]);
+        autoGenerateMissingComponents([componentId]);
+    };
+
+    // Funzione Replay: Ricalcola e rigenera tutto
+    const handleReplay = () => {
+        const validation = validateSceneWithCatalog(scene, ComponentRegistry);
+        setValidationErrors(validation.errors || []);
+
+        const missing = (validation.errors || [])
+            .filter(err => err.includes('non-existent component'))
+            .map(err => err.split(':')[1]?.trim())
+            .filter(Boolean) as string[];
+
+        if (missing.length > 0) {
+            setMissingComponents(missing);
+            autoGenerateMissingComponents(missing);
+        }
+    };
+
     const renderCatalog = () => {
         const components = getAllComponents();
         const categories = [...new Set(components.map(c => c.category))];
@@ -201,24 +237,22 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({ initialScene }) => {
                             {categoryTranslations[category] || category}
                         </h3>
                         <div className="space-y-2">
-                            {components
-                                .filter(c => c.category === category)
-                                .map(comp => (
-                                    <div
-                                        key={comp.id}
-                                        className="bg-gray-50 p-2 rounded text-xs hover:bg-gray-100 cursor-pointer transition-colors"
-                                        onClick={() => setEditingComponent(comp)}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div className="font-medium text-gray-800">{comp.name}</div>
-                                            <button className="text-blue-600 hover:text-blue-800 text-xs">
-                                                ✏️ Modifica
-                                            </button>
-                                        </div>
-                                        <div className="text-gray-600 text-[10px] mt-1">ID: {comp.id}</div>
-                                        <div className="text-gray-500 mt-1">{comp.description}</div>
+                            {components.filter(c => c.category === category).map(comp => (
+                                <div
+                                    key={comp.id}
+                                    className="bg-gray-50 p-2 rounded text-xs hover:bg-gray-100 cursor-pointer transition-colors"
+                                    onClick={() => setEditingComponent(comp)}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="font-medium text-gray-800">{comp.name}</div>
+                                        <button className="text-blue-600 hover:text-blue-800 text-xs">
+                                            ✏️ Modifica
+                                        </button>
                                     </div>
-                                ))}
+                                    <div className="text-gray-600 text-[10px] mt-1">ID: {comp.id}</div>
+                                    <div className="text-gray-500 mt-1">{comp.description}</div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 ))}
@@ -314,11 +348,20 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({ initialScene }) => {
 
                 {/* Center Panel */}
                 <div className="flex-1 bg-gray-50 p-8 flex flex-col">
-                    <div className="mb-4">
-                        <h1 className="text-2xl font-bold text-gray-800">Editor QuizEngine</h1>
-                        <p className="text-sm text-gray-600 mt-1">
-                            {activeTab === 'scene' ? 'Anteprima in tempo reale' : 'Catalogo componenti'}
-                        </p>
+                    <div className="mb-4 flex items-center justify-between">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-800">Editor QuizEngine</h1>
+                            <p className="text-sm text-gray-600 mt-1">
+                                {activeTab === 'scene' ? 'Anteprima in tempo reale' : 'Catalogo componenti'}
+                            </p>
+                        </div>
+                        <button
+                            onClick={handleReplay}
+                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm transition-colors"
+                            title="Ricalcola la scena e rigenera i componenti mancanti"
+                        >
+                            🔄 Replay & Fix
+                        </button>
                     </div>
 
                     <div className="bg-white shadow-lg rounded-lg overflow-hidden flex-1 relative">
@@ -387,6 +430,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({ initialScene }) => {
                         setEditingComponent(null);
                         // TODO: Salvare nel catalogo reale
                     }}
+                    onDelete={handleDeleteComponent}
+                    onRegenerate={handleRegenerateComponent}
                 />
             )}
         </>
